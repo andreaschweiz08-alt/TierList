@@ -63,7 +63,6 @@ async function initializeApp() {
         renderAdminEditControls(); 
     }
 
-    // FUNZIONE AGGIORNATA: Include la sezione per la rimozione del giocatore
     function renderAdminControls() {
         adminPanelContainer.innerHTML += `
             <div class="admin-add-section">
@@ -77,7 +76,7 @@ async function initializeApp() {
             </div>
             
             <div class="admin-remove-section">
-                <h3>Rimuovi Giocatore</h3>
+                <h3>Rimuovi Giocatore Completo ⚠️</h3>
                 <input type="text" id="playerRemoveInput" placeholder="Nickname Giocatore da rimuovere" required>
                 <button id="removePlayerButton" class="remove-button">Rimuovi Giocatore</button>
             </div>
@@ -241,7 +240,7 @@ async function initializeApp() {
         }
     }
     
-    // NUOVA FUNZIONE: Rimuove l'intero giocatore dal database
+    // FUNZIONE AGGIUNTA: Rimuove l'intero giocatore dal database
     async function removePlayer(playerName) {
         if (!confirm(`ATTENZIONE! Sei sicuro di voler RIMUOVERE PERMANENTEMENTE il giocatore ${playerName} dal database? Questa azione non è reversibile!`)) {
             return;
@@ -450,6 +449,7 @@ async function initializeApp() {
             const sortedPlayers = players
                 .map(player => ({
                     ...player,
+                    // Uso l'oggetto vuoto di fallback per players senza ranks
                     totalPoints: Object.values(player.ranks || {}).reduce((sum, currentRank) => sum + (RANK_POINTS[currentRank] || 0), 0)
                 }))
                 .sort((a, b) => b.totalPoints - a.totalPoints);
@@ -501,8 +501,7 @@ async function initializeApp() {
             const tiersContainer = document.createElement("div");
             tiersContainer.className = "tiers-container";
             
-            // Trova la chiave della modalità (es. "Bedwars") nell'oggetto ranks del primo giocatore
-            // Uso l'operatore di concatenazione per evitare errori se players è vuoto
+            // Trova la chiave della modalità (es. "Bedwars")
             const modeKey = database.players.length > 0 ? Object.keys(database.players[0].ranks || {}).find(key => key.toLowerCase() === modeName.toLowerCase()) : modeName;
             
             const filteredPlayers = players.filter(p => p.ranks && p.ranks[modeKey]);
@@ -570,4 +569,3 @@ async function initializeApp() {
         tierlistDiv.innerHTML = `<p>Errore nel caricamento dei dati: ${error.message}</p><p>Assicurati che il tuo backend Render sia attivo e che l'URL nel file script.js sia corretto.</p>`;
     }
 }
-
