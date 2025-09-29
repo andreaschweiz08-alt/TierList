@@ -31,6 +31,10 @@
     {
       "name": "Sumo",
       "id": "sumo"
+    },
+    {
+      "name": "Bedfight",
+      "id": "bedfight"
     }
   ],
   "players": [
@@ -59,9 +63,6 @@
         "Classic": "S",
         "Build UHC": "S",
         "Sumo": "A+"
-      },
-      "mode": "Build UHC",
-      "tier": "C-"
       }
     }
   ]
