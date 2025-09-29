@@ -1,22 +1,31 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors'); // Correzione critica per Render
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const ADMIN_KEY = "hMyFOadnp3~kN6";
 
+// Legge la chiave Admin dalla variabile d'ambiente di Render (metodo raccomandato)
+// Se non usi Render, la chiave di fallback è quella che avevi usato
+const ADMIN_KEY = process.env.ADMIN_KEY || "hMyFOadnp3~kN6"; 
+
+const DATABASE_PATH = path.join(__dirname, 'database.json');
+
+// Middleware
+app.use(cors()); // Abilita CORS
 app.use(express.json());
-
-// Serve i file statici dalla stessa directory in cui si trova server.js
 app.use(express.static(__dirname));
 
 // Endpoint per ottenere i dati del database
 app.get('/api/database', (req, res) => {
-    const databasePath = path.join(__dirname, 'database.json');
-    fs.readFile(databasePath, 'utf8', (err, data) => {
+    fs.readFile(DATABASE_PATH, 'utf8', (err, data) => {
         if (err) {
-            console.error(err);
+            console.error("Errore lettura database:", err);
+            // Inizializza con un database vuoto se il file non esiste
+            if (err.code === 'ENOENT') {
+                 return res.json({ players: [], modes: [{ name: "Overall", id: "overall" }] });
+            }
             return res.status(500).send('Error reading database file.');
         }
         res.json(JSON.parse(data));
@@ -36,8 +45,7 @@ app.post('/api/update-player-tier', (req, res) => {
         return res.status(400).send('Missing player name, mode, or new tier.');
     }
 
-    const databasePath = path.join(__dirname, 'database.json');
-    fs.readFile(databasePath, 'utf8', (err, data) => {
+    fs.readFile(DATABASE_PATH, 'utf8', (err, data) => {
         if (err) {
             console.error(err);
             return res.status(500).send('Error reading database file.');
@@ -51,9 +59,14 @@ app.post('/api/update-player-tier', (req, res) => {
                 return res.status(404).send('Player not found.');
             }
 
+            // Aggiunge la gestione se 'ranks' non esiste (previene l'errore)
+            if (!db.players[playerIndex].ranks) {
+                db.players[playerIndex].ranks = {};
+            }
+            
             db.players[playerIndex].ranks[mode] = newTier;
 
-            fs.writeFile(databasePath, JSON.stringify(db, null, 2), 'utf8', (err) => {
+            fs.writeFile(DATABASE_PATH, JSON.stringify(db, null, 2), 'utf8', (err) => {
                 if (err) {
                     console.error(err);
                     return res.status(500).send('Error writing to database file.');
@@ -67,7 +80,7 @@ app.post('/api/update-player-tier', (req, res) => {
     });
 });
 
-// Endpoint per rimuovere il tier di un giocatore
+// Endpoint per rimuovere SOLO il tier di un giocatore
 app.post('/api/remove-player-tier', (req, res) => {
     const { name, mode } = req.body;
     const apiKey = req.headers['x-api-key'];
@@ -80,8 +93,7 @@ app.post('/api/remove-player-tier', (req, res) => {
         return res.status(400).send('Missing player name or mode.');
     }
 
-    const databasePath = path.join(__dirname, 'database.json');
-    fs.readFile(databasePath, 'utf8', (err, data) => {
+    fs.readFile(DATABASE_PATH, 'utf8', (err, data) => {
         if (err) {
             console.error(err);
             return res.status(500).send('Error reading database file.');
@@ -94,14 +106,15 @@ app.post('/api/remove-player-tier', (req, res) => {
             if (playerIndex === -1) {
                 return res.status(404).send('Player not found.');
             }
-
-            if (db.players[playerIndex].ranks[mode]) {
+            
+            // Verifica che l'oggetto ranks e la proprietà mode esistano prima di eliminare
+            if (db.players[playerIndex].ranks && db.players[playerIndex].ranks[mode]) {
                 delete db.players[playerIndex].ranks[mode];
             } else {
                 return res.status(404).send('Tier for this mode not found.');
             }
 
-            fs.writeFile(databasePath, JSON.stringify(db, null, 2), 'utf8', (err) => {
+            fs.writeFile(DATABASE_PATH, JSON.stringify(db, null, 2), 'utf8', (err) => {
                 if (err) {
                     console.error(err);
                     return res.status(500).send('Error writing to database file.');
@@ -115,7 +128,46 @@ app.post('/api/remove-player-tier', (req, res) => {
     });
 });
 
-// Endpoint per aggiungere un nuovo giocatore
+// NUOVO ENDPOINT: Rimuove l'intero giocatore dal database
+app.post('/api/remove-player', (req, res) => {
+    const { name } = req.body;
+    const apiKey = req.headers['x-api-key'];
+
+    if (apiKey !== ADMIN_KEY) {
+        return res.status(403).send('Unauthorized');
+    }
+
+    if (!name) {
+        return res.status(400).send('Missing player name.');
+    }
+
+    fs.readFile(DATABASE_PATH, 'utf8', (err, data) => {
+        if (err) return res.status(500).send('Error reading database.');
+
+        try {
+            let db = JSON.parse(data);
+            const initialLength = db.players.length;
+            
+            // Filtra per creare un nuovo array ESCLUDENDO il giocatore con quel nome
+            db.players = db.players.filter(p => p.name !== name);
+
+            if (db.players.length === initialLength) {
+                return res.status(404).send('Player not found.');
+            }
+
+            fs.writeFile(DATABASE_PATH, JSON.stringify(db, null, 2), err => {
+                if (err) return res.status(500).send('Error writing to database.');
+                res.status(200).send(`Giocatore ${name} rimosso con successo!`);
+            });
+        } catch (parseErr) {
+            console.error(parseErr);
+            res.status(500).send('Error parsing database file.');
+        }
+    });
+});
+
+
+// Endpoint per aggiungere un nuovo giocatore (o aggiornarlo se esiste)
 app.post('/api/add-player', (req, res) => {
     const { name, mode, tier, region } = req.body;
     const apiKey = req.headers['x-api-key'];
@@ -124,8 +176,7 @@ app.post('/api/add-player', (req, res) => {
         return res.status(403).send('Unauthorized');
     }
 
-    const databasePath = path.join(__dirname, 'database.json');
-    fs.readFile(databasePath, 'utf8', (err, data) => {
+    fs.readFile(DATABASE_PATH, 'utf8', (err, data) => {
         if (err) return res.status(500).send('Error reading database.');
 
         const db = JSON.parse(data);
@@ -133,7 +184,7 @@ app.post('/api/add-player', (req, res) => {
 
         if (playerExists) {
             const playerToUpdate = db.players.find(p => p.name === name);
-            if (!playerToUpdate.ranks) {
+             if (!playerToUpdate.ranks) {
                 playerToUpdate.ranks = {};
             }
             playerToUpdate.ranks[mode] = tier;
@@ -146,7 +197,7 @@ app.post('/api/add-player', (req, res) => {
             db.players.push(newPlayer);
         }
 
-        fs.writeFile(databasePath, JSON.stringify(db, null, 2), err => {
+        fs.writeFile(DATABASE_PATH, JSON.stringify(db, null, 2), err => {
             if (err) return res.status(500).send('Error writing to database.');
             res.status(200).send('Giocatore aggiunto o aggiornato con successo!');
         });
