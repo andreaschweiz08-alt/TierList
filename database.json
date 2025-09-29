@@ -62,26 +62,6 @@
       },
       "mode": "Build UHC",
       "tier": "C-"
-    },
-    {
-      "name": "BurritoIta",
-      "region": "OC",
-      "ranks": {
-        "Boxing": "C-"
-      }
-    },
-    {
-      "name": "ProvaTest",
-      "region": "OC",
-      "ranks": {
-        "Bedwars": "S"
-      }
-    },
-    {
-      "name": "Bedfight",
-      "region": "SA",
-      "ranks": {
-        "Bedfight": "S"
       }
     }
   ]
