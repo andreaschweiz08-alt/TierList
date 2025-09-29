@@ -3,44 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TierList Italiana</title>
+    <title>Tier List 1.8.9</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+
     <header>
         <div class="header-content">
-            <div class="header-left-icons">
-                <a href="#" class="discord-button"><i class="fab fa-discord"></i><span>Discord</span></a>
+            <h1>🏆 Tier List 1.8.9 🏆</h1>
+            <div id="adminIcon">
+                <i class="fas fa-user-lock"></i>
             </div>
-            <h1 class="tierlist-logo">TIERLIST ITALIANA</h1>
-            <div class="header-right-icons">
-                <div class="search-bar-container">
-                    <input type="text" id="playerSearch" placeholder="Cerca un giocatore...">
-                    <div id="playerSuggestions" class="suggestions-container"></div>
-                </div>
-                <i class="fas fa-user-shield admin-icon" id="adminIcon"></i>
-            </div>
+        </div>
+        <div class="search-container">
+            <input type="text" id="playerSearch" placeholder="Cerca un giocatore...">
+            <div id="playerSuggestions" class="suggestions-dropdown"></div>
         </div>
     </header>
 
-    <main>
-        <div class="modes-bar">
-            <div class="modes-list">
-                </div>
-        </div>
-        
+    <div class="container">
+        <a 
+            href="https://discord.gg/9djGFHYw7h" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="discord-button" 
+            title="Unisciti al nostro Discord"
+        >
+            <i class="fab fa-discord"></i> Unisciti al Discord
+        </a>
+        <div class="modes-list">
+            </div>
+
         <div id="tierlist">
             </div>
-        
+
         <div id="adminPanelContainer" style="display: none;">
             </div>
-    </main>
+    </div>
 
-    <div id="adminLoginModal" class="modal-container" style="display: none;">
+    <div id="adminLoginModal" class="modal">
         </div>
 
     <script src="script.js"></script>
