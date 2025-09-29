@@ -13,6 +13,8 @@ async function initializeApp() {
     const adminPanelContainer = document.getElementById("adminPanelContainer");
     const adminIcon = document.getElementById("adminIcon");
     const adminLoginModal = document.getElementById("adminLoginModal");
+    
+    // Riferimenti DOM per la RICERCA
     const searchInput = document.getElementById('playerSearch');
     const suggestionsContainer = document.getElementById('playerSuggestions');
 
@@ -31,6 +33,7 @@ async function initializeApp() {
 
     let database;
     let isAdmin = false;
+    let currentMode = "Overall"; // Variabile per tracciare la modalità attuale
 
     // Funzione per ottenere il titolo in base ai punti
     function getCombatTitle(points) {
@@ -55,7 +58,7 @@ async function initializeApp() {
         showView('adminPanelContainer');
         adminPanelContainer.innerHTML = '';
         renderAdminControls();
-        renderAdminEditControls(); // Aggiungi la nuova interfaccia di modifica
+        renderAdminEditControls(); 
     }
 
     function renderAdminControls() {
@@ -67,6 +70,7 @@ async function initializeApp() {
                 <select id="playerTierSelect"></select>
                 <input type="text" id="playerRegionInput" placeholder="Regione" required>
                 <button id="addPlayerButton">Aggiungi Giocatore</button>
+                <p class="admin-warning">ATTENZIONE: Queste funzioni richiedono un server attivo e non funzionano su GitHub Pages.</p>
             </div>
         `;
         
@@ -159,11 +163,16 @@ async function initializeApp() {
         resultsContainer.appendChild(playerInfoDiv);
     }
     
+    // Le funzioni updatePlayerTier, removePlayerTier e addPlayer sono lasciate con le chiamate POST API
+    // MA NON FUNZIONERANNO su GitHub Pages.
+
     async function updatePlayerTier(playerName, modeName, newTier) {
         if (!newTier) {
             alert("Seleziona un tier valido.");
             return;
         }
+        alert("ATTENZIONE: La modifica è stata inviata, ma non funzionerà senza un server attivo.");
+        // Il codice di fetch non è modificato, ma fallirà su hosting statico.
         const data = { name: playerName, mode: modeName, newTier: newTier };
         try {
             const response = await fetch('/api/update-player-tier', {
@@ -178,7 +187,7 @@ async function initializeApp() {
                 if (player) {
                     displayPlayerTiers(player);
                 }
-                renderLeaderboard("Overall");
+                renderLeaderboard(currentMode); // Usa la modalità attuale
             } else {
                 const errorText = await response.text();
                 alert("Errore nell'aggiornamento del tier: " + errorText);
@@ -193,6 +202,8 @@ async function initializeApp() {
         if (!confirm(`Sei sicuro di voler rimuovere il tier di ${playerName} in ${modeName}?`)) {
             return;
         }
+        alert("ATTENZIONE: La rimozione è stata inviata, ma non funzionerà senza un server attivo.");
+        // Il codice di fetch non è modificato, ma fallirà su hosting statico.
         const data = { name: playerName, mode: modeName };
         try {
             const response = await fetch('/api/remove-player-tier', {
@@ -207,7 +218,7 @@ async function initializeApp() {
                 if (player) {
                     displayPlayerTiers(player);
                 }
-                renderLeaderboard("Overall");
+                renderLeaderboard(currentMode); // Usa la modalità attuale
             } else {
                 const errorText = await response.text();
                 alert("Errore nella rimozione del tier: " + errorText);
@@ -232,6 +243,8 @@ async function initializeApp() {
 
     // Funzioni di gestione database
     async function addPlayer() {
+        alert("ATTENZIONE: L'aggiunta è stata inviata, ma non funzionerà senza un server attivo.");
+        // Il codice di fetch non è modificato, ma fallirà su hosting statico.
         const name = document.getElementById('playerNameInput').value.trim();
         const mode = document.getElementById('playerModeSelect').value;
         const tier = document.getElementById('playerTierSelect').value;
@@ -264,9 +277,14 @@ async function initializeApp() {
         }
     }
 
+    /**
+     * FUNZIONE CRUCIALE MODIFICATA PER GITHUB PAGES
+     * Carica il database direttamente dal percorso statico.
+     */
     async function reloadDatabase() {
-        const response = await fetch('/database.json');
-        if (!response.ok) throw new Error('Network response was not ok');
+        // Usa il percorso statico: /data/database.json
+        const response = await fetch('/data/database.json'); 
+        if (!response.ok) throw new Error('Network response was not ok. Controlla il percorso /data/database.json');
         database = await response.json();
     }
 
@@ -276,7 +294,7 @@ async function initializeApp() {
             isAdmin = true;
             adminLoginModal.style.display = 'none';
             renderAdminButton(); 
-            alert("Accesso Admin riuscito! Ora puoi usare la modalità Admin.");
+            alert("Accesso Admin riuscito! (Ricorda: le funzioni di modifica/aggiunta non funzionano su GitHub Pages)");
         } else {
             alert("Chiave errata!");
             document.getElementById('adminKeyInput').value = '';
@@ -311,7 +329,7 @@ async function initializeApp() {
             showView('tierlist');
             const overallButton = document.querySelector('.mode-button');
             if(overallButton) overallButton.classList.add('active');
-            renderLeaderboard("Overall");
+            renderLeaderboard(currentMode);
             alert("Sei stato disconnesso dal pannello Admin.");
         } else {
             adminLoginModal.innerHTML = `
@@ -331,6 +349,7 @@ async function initializeApp() {
     });
 
     function renderLeaderboard(modeName) {
+        currentMode = modeName; // Aggiorna la modalità attuale
         tierlistDiv.innerHTML = "";
         const players = database.players;
         const modesData = database.modes.reduce((acc, mode) => {
@@ -338,7 +357,12 @@ async function initializeApp() {
             return acc;
         }, {});
 
+        // ... (Il resto del codice di renderLeaderboard non è stato modificato)
+        // ... (E' troppo lungo da includere qui, usa la versione originale)
+        
+        // Ho solo modificato l'ultima parte per mostrare il codice completo
         if (modeName === "Overall") {
+            // ... (logica Overall non modificata)
             const sortedPlayers = players
                 .map(player => ({
                     ...player,
@@ -389,6 +413,7 @@ async function initializeApp() {
             tierlistDiv.appendChild(table);
 
         } else {
+            // ... (logica Tiers non modificata)
             const tiersByRank = ["S", "A", "B", "C", "D", "F"];
             const tiersContainer = document.createElement("div");
             tiersContainer.className = "tiers-container";
@@ -424,9 +449,66 @@ async function initializeApp() {
             tierlistDiv.appendChild(tiersContainer);
         }
     }
+    
+    /**
+     * Logica di ricerca Aggiunta
+     */
+    function handlePlayerSearch() {
+        const query = searchInput.value.toLowerCase();
+        suggestionsContainer.innerHTML = '';
+
+        if (query.length > 0) {
+            const matches = database.players.filter(p => p.name.toLowerCase().includes(query));
+            if (matches.length > 0) {
+                suggestionsContainer.style.display = 'block';
+                matches.slice(0, 5).forEach(player => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.className = 'suggestion-item';
+                    suggestionItem.textContent = player.name;
+                    suggestionItem.addEventListener('click', () => {
+                        // Quando un suggerimento è cliccato, filtra la leaderboard (solo in modalità Overall)
+                        searchInput.value = player.name;
+                        suggestionsContainer.style.display = 'none';
+                        filterLeaderboardByName(player.name);
+                    });
+                    suggestionsContainer.appendChild(suggestionItem);
+                });
+            } else {
+                suggestionsContainer.style.display = 'none';
+            }
+        } else {
+            suggestionsContainer.style.display = 'none';
+            filterLeaderboardByName(''); // Ripristina la visualizzazione completa
+        }
+    }
+    
+    function filterLeaderboardByName(nameQuery) {
+        const rows = document.querySelectorAll('.leaderboard-row, .player-item');
+        rows.forEach(row => {
+            const playerName = row.getAttribute('data-player-name').toLowerCase();
+            const shouldShow = playerName.includes(nameQuery.toLowerCase()) || nameQuery === '';
+            
+            // Nasconde o mostra la riga/elemento in base al filtro
+            if (shouldShow) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Se si è nella vista Tier (non Overall), deve ri-renderizzare solo se il nome è vuoto
+        if (currentMode !== "Overall" && nameQuery !== '') {
+             // In modalità Tier, la ricerca è meno efficace perché le colonne possono svuotarsi, 
+             // ma il filtraggio con display:none funziona su entrambi i layout.
+        } else if (nameQuery === '') {
+            // Se la ricerca è vuota, ripristina la visualizzazione
+            renderLeaderboard(currentMode); 
+        }
+    }
 
     try {
         await reloadDatabase();
+        
         // Aggiungi Bedfight al database virtuale per la visualizzazione
         database.modes.push({ name: "Bedfight", players: [] });
 
@@ -444,6 +526,9 @@ async function initializeApp() {
             });
             modesList.appendChild(btn);
         });
+        
+        // Inizializza la funzione di ricerca
+        searchInput.addEventListener('input', handlePlayerSearch);
 
         showView('tierlist');
         renderLeaderboard("Overall");
