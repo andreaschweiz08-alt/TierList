@@ -77,7 +77,7 @@ async function initializeApp() {
             </div>
             
             <div class="admin-remove-section">
-                <h3>Rimuovi Giocatore Completo ⚠️</h3>
+                <h3>Rimuovi Giocatore</h3>
                 <input type="text" id="playerRemoveInput" placeholder="Nickname Giocatore da rimuovere" required>
                 <button id="removePlayerButton" class="remove-button">Rimuovi Giocatore</button>
             </div>
@@ -570,3 +570,4 @@ async function initializeApp() {
         tierlistDiv.innerHTML = `<p>Errore nel caricamento dei dati: ${error.message}</p><p>Assicurati che il tuo backend Render sia attivo e che l'URL nel file script.js sia corretto.</p>`;
     }
 }
+
