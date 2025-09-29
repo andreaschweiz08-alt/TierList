@@ -8,8 +8,8 @@ async function initializeApp() {
     };
     const ADMIN_KEY = "hMyFOadnp3~kN6"; // La tua chiave Admin (usata dal frontend)
     
-    // !!! SOSTITUISCI QUESTO URL con l'URL del tuo servizio Render !!!
-    const BACKEND_URL = "https://tuo-servizio-render.onrender.com"; 
+    // !!! URL DI RENDER AGGIORNATO !!!
+    const BACKEND_URL = "https://tierlist-dakq.onrender.com"; 
 
     // === RIFERIMENTI DOM ===
     const modesList = document.querySelector(".modes-list");
@@ -490,7 +490,10 @@ async function initializeApp() {
     try {
         await reloadDatabase();
         
-        database.modes.push({ name: "Bedfight", players: [] });
+        // Aggiungi Bedfight alla lista delle modalità se non è presente
+        if (!database.modes.find(m => m.name === "Bedfight")) {
+            database.modes.push({ name: "Bedfight", players: [] });
+        }
 
         const modes = database.modes.filter(m => m.name !== "Admin");
         modes.forEach((mod, idx) => {
