@@ -1,0 +1,88 @@
+{
+  "modes": [
+    {
+      "name": "Overall",
+      "id": "overall"
+    },
+    {
+      "name": "Bedwars",
+      "id": "bedwars"
+    },
+    {
+      "name": "Boxing",
+      "id": "boxing"
+    },
+    {
+      "name": "Nodebuff",
+      "id": "nodebuff"
+    },
+    {
+      "name": "Battlerush",
+      "id": "battlerush"
+    },
+    {
+      "name": "Classic",
+      "id": "classic"
+    },
+    {
+      "name": "Build UHC",
+      "id": "builduhc"
+    },
+    {
+      "name": "Sumo",
+      "id": "sumo"
+    }
+  ],
+  "players": [
+    {
+      "name": "K1rom_",
+      "region": "EU",
+      "ranks": {
+        "Bedwars": "S",
+        "Boxing": "A+",
+        "Nodebuff": "B+",
+        "Battlerush": "A+",
+        "Classic": "S",
+        "Build UHC": "F",
+        "Sumo": "B+",
+        "Bedfight": "A+"
+      }
+    },
+    {
+      "name": "MadetheAndrea",
+      "region": "EU",
+      "ranks": {
+        "Bedwars": "S",
+        "Boxing": "S",
+        "Nodebuff": "A+",
+        "Battlerush": "S",
+        "Classic": "S",
+        "Build UHC": "S",
+        "Sumo": "A+"
+      },
+      "mode": "Build UHC",
+      "tier": "C-"
+    },
+    {
+      "name": "BurritoIta",
+      "region": "OC",
+      "ranks": {
+        "Boxing": "C-"
+      }
+    },
+    {
+      "name": "ProvaTest",
+      "region": "OC",
+      "ranks": {
+        "Bedwars": "S"
+      }
+    },
+    {
+      "name": "Bedfight",
+      "region": "SA",
+      "ranks": {
+        "Bedfight": "S"
+      }
+    }
+  ]
+}
