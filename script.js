@@ -55,7 +55,7 @@ async function initializeApp() {
         document.getElementById(viewId).style.display = 'block';
     }
 
-    // === FUNZIONI ADMIN (MODIFICATE PER USARE BACKEND_URL) ===
+    // === FUNZIONI ADMIN ===
     function renderAdminView() {
         showView('adminPanelContainer');
         adminPanelContainer.innerHTML = '';
@@ -63,6 +63,7 @@ async function initializeApp() {
         renderAdminEditControls(); 
     }
 
+    // FUNZIONE AGGIORNATA: Include la sezione per la rimozione del giocatore
     function renderAdminControls() {
         adminPanelContainer.innerHTML += `
             <div class="admin-add-section">
@@ -74,18 +75,34 @@ async function initializeApp() {
                 <button id="addPlayerButton">Aggiungi Giocatore</button>
                 <p class="admin-warning">Attualmente connesso al backend: <b>${BACKEND_URL}</b></p>
             </div>
-        `;
+            
+            <div class="admin-remove-section">
+                <h3>Rimuovi Giocatore Completo ⚠️</h3>
+                <input type="text" id="playerRemoveInput" placeholder="Nickname Giocatore da rimuovere" required>
+                <button id="removePlayerButton" class="remove-button">Rimuovi Giocatore</button>
+            </div>
+            `;
         
         populateAddPlayerForm();
         document.getElementById('addPlayerButton').addEventListener('click', () => addPlayer());
+        
+        // NUOVO LISTENER: Collega il pulsante alla funzione di rimozione
+        document.getElementById('removePlayerButton').addEventListener('click', () => {
+            const name = document.getElementById('playerRemoveInput').value.trim();
+            if (name) {
+                removePlayer(name);
+            } else {
+                alert("Inserisci il nickname del giocatore da rimuovere.");
+            }
+        });
     }
 
     function renderAdminEditControls() {
         const adminSection = document.createElement('div');
         adminSection.className = "admin-edit-section";
         adminSection.innerHTML = `
-            <h3>Modifica o Rimuovi Giocatore</h3>
-            <input type="text" id="editPlayerSearch" placeholder="Cerca Giocatore">
+            <h3>Modifica o Rimuovi Tier</h3>
+            <input type="text" id="editPlayerSearch" placeholder="Cerca Giocatore da Modificare">
             <div id="editPlayerResults" class="edit-results"></div>
         `;
         adminPanelContainer.appendChild(adminSection);
@@ -127,7 +144,8 @@ async function initializeApp() {
         const modesToEdit = database.modes.filter(m => m.name !== "Overall" && m.name !== "Admin");
         
         modesToEdit.forEach(mode => {
-            const currentTier = player.ranks[mode.name] || 'N/A';
+            // Utilizza l'operatore di coalescenza nullo per sicurezza
+            const currentTier = player.ranks?.[mode.name] || 'N/A';
             const modeEditDiv = document.createElement('div');
             modeEditDiv.className = 'mode-edit-item';
             
@@ -222,6 +240,35 @@ async function initializeApp() {
             alert("Errore di connessione al server.");
         }
     }
+    
+    // NUOVA FUNZIONE: Rimuove l'intero giocatore dal database
+    async function removePlayer(playerName) {
+        if (!confirm(`ATTENZIONE! Sei sicuro di voler RIMUOVERE PERMANENTEMENTE il giocatore ${playerName} dal database? Questa azione non è reversibile!`)) {
+            return;
+        }
+        const data = { name: playerName };
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/remove-player`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': ADMIN_KEY },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                alert(`Giocatore ${playerName} rimosso con successo!`);
+                document.getElementById('playerRemoveInput').value = ''; // Pulisci il campo
+                await reloadDatabase();
+                renderAdminView(); // Ricarica la vista admin
+                renderLeaderboard(currentMode);
+            } else {
+                const errorText = await response.text();
+                alert("Errore nella rimozione del giocatore: " + errorText);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Errore di connessione al server.");
+        }
+    }
+
 
     function populateAddPlayerForm() {
         const modeSelect = document.getElementById('playerModeSelect');
@@ -389,7 +436,7 @@ async function initializeApp() {
         }
     }
 
-    // === FUNZIONE DI RENDERING LEADERBOARD (NON MODIFICATA) ===
+    // === FUNZIONE DI RENDERING LEADERBOARD ===
     function renderLeaderboard(modeName) {
         currentMode = modeName;
         tierlistDiv.innerHTML = "";
@@ -403,7 +450,7 @@ async function initializeApp() {
             const sortedPlayers = players
                 .map(player => ({
                     ...player,
-                    totalPoints: Object.values(player.ranks).reduce((sum, currentRank) => sum + (RANK_POINTS[currentRank] || 0), 0)
+                    totalPoints: Object.values(player.ranks || {}).reduce((sum, currentRank) => sum + (RANK_POINTS[currentRank] || 0), 0)
                 }))
                 .sort((a, b) => b.totalPoints - a.totalPoints);
 
@@ -414,7 +461,7 @@ async function initializeApp() {
                 const combatTitle = getCombatTitle(player.totalPoints);
                 
                 const allModesBadges = database.modes.filter(m => m.name !== "Overall" && m.name !== "Admin").map(mode => {
-                    const rank = player.ranks[mode.name] || '0';
+                    const rank = player.ranks?.[mode.name] || '0';
                     const emoji = modeEmojis[mode.name] || '';
                     return `
                         <div class="mode-badge">
@@ -454,12 +501,15 @@ async function initializeApp() {
             const tiersContainer = document.createElement("div");
             tiersContainer.className = "tiers-container";
             
-            const modeKey = Object.keys(players[0].ranks).find(key => key.toLowerCase() === modeName.toLowerCase());
-            const filteredPlayers = players.filter(p => p.ranks[modeKey]);
+            // Trova la chiave della modalità (es. "Bedwars") nell'oggetto ranks del primo giocatore
+            // Uso l'operatore di concatenazione per evitare errori se players è vuoto
+            const modeKey = database.players.length > 0 ? Object.keys(database.players[0].ranks || {}).find(key => key.toLowerCase() === modeName.toLowerCase()) : modeName;
+            
+            const filteredPlayers = players.filter(p => p.ranks && p.ranks[modeKey]);
             const sortedPlayersByTier = filteredPlayers.sort((a, b) => RANK_POINTS[b.ranks[modeKey]] - RANK_POINTS[a.ranks[modeKey]]);
 
             tiersByRank.forEach(tier => {
-                const tierPlayers = sortedPlayersByTier.filter(p => p.ranks[modeKey].startsWith(tier));
+                const tierPlayers = sortedPlayersByTier.filter(p => p.ranks[modeKey] && p.ranks[modeKey].startsWith(tier));
                 const tierColumn = document.createElement("div");
                 tierColumn.className = `tier-column tier-column-${tier.toLowerCase()}`;
                 tierColumn.innerHTML = `
