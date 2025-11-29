@@ -2,60 +2,44 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-const bodyParser = require('body-parser'); // Aggiunto
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CRITICAL: La chiave deve essere passata solo dal server tramite variabile d'ambiente.
-const ADMIN_KEY = process.env.ADMIN_KEY; 
+// CHIAVE ADMIN: Impostala nelle variabili d'ambiente di Render o usa questa per test locale
+const ADMIN_KEY = process.env.ADMIN_KEY || "ChiaveSegretaDiTest123";
 
-// Variabile di controllo per prevenire scritture concorrenti sul file
+const DATABASE_PATH = path.join(__dirname, 'database.json');
 let isWriting = false;
 
-// Percorso unificato per il database.
-const DATABASE_PATH = path.join(__dirname, 'database.json');
-
-// Mappa dei punti per il calcolo Overall (Spostata dal frontend al backend)
+// Punteggi per il calcolo automatico
 const RANK_POINTS = {
-    "S": 100, "A+": 80, "A-": 70, "B+": 50, "B-": 40,
-    "C+": 30, "C-": 20, "D+": 15, "D-": 10, "F": 5
+    "S": 100, "A+": 90, "A-": 80, "B+": 70, "B-": 60,
+    "C+": 50, "C-": 40, "D+": 30, "D-": 20, "F": 10
 };
 
-// Funzione di utilità per calcolare il rank Overall
-function calculateOverallRank(playerRanks) {
-    const ranks = Object.values(playerRanks).filter(r => RANK_POINTS.hasOwnProperty(r));
-    if (ranks.length === 0) return 'N/A';
-
-    const totalPoints = ranks.reduce((sum, rank) => sum + RANK_POINTS[rank], 0);
-    const averagePoints = totalPoints / ranks.length;
-
-    // Logica per assegnare la tier in base alla media
-    if (averagePoints >= 90) return 'S';
-    if (averagePoints >= 75) return 'A+';
-    if (averagePoints >= 65) return 'A-';
-    if (averagePoints >= 45) return 'B+';
-    if (averagePoints >= 35) return 'B-';
-    if (averagePoints >= 25) return 'C+';
-    if (averagePoints >= 12.5) return 'C-';
-    if (averagePoints >= 7.5) return 'D+';
-    if (averagePoints >= 6) return 'D-';
-    return 'F';
-}
-
-// Middleware
-app.use(cors());
-app.use(bodyParser.json()); // Usa body-parser per gestire i body delle richieste
+app.use(cors()); // Abilita CORS per tutte le origini
+app.use(express.json()); // Gestisce i JSON senza body-parser
 app.use(express.static(__dirname));
 
-// Funzione di utilità per leggere il database
+// Utility: Leggi Database
 const readDatabase = () => {
     return new Promise((resolve, reject) => {
         fs.readFile(DATABASE_PATH, 'utf8', (err, data) => {
             if (err) {
-                // Se il file non esiste, ritorna una struttura base
                 if (err.code === 'ENOENT') {
-                    return resolve({ players: [], modes: [{ name: "Overall", id: "overall" }] });
+                    // Crea struttura base se il file non esiste
+                    const initialData = { 
+                        players: [], 
+                        modes: [
+                            { name: "Overall", id: "overall" },
+                            { name: "Bedwars", id: "bedwars" },
+                            { name: "Boxing", id: "boxing" },
+                            { name: "Nodebuff", id: "nodebuff" },
+                            { name: "Classic", id: "classic" }
+                        ] 
+                    };
+                    return resolve(initialData);
                 }
                 return reject(err);
             }
@@ -68,123 +52,103 @@ const readDatabase = () => {
     });
 };
 
-// Funzione di utilità per scrivere il database con lock
+// Utility: Scrivi Database
 const writeDatabase = (data) => {
     return new Promise((resolve, reject) => {
-        if (isWriting) {
-            return reject(new Error('Database is currently being written to. Try again shortly.'));
-        }
+        if (isWriting) return reject(new Error('Server occupato, riprova tra un attimo.'));
         isWriting = true;
-        
         fs.writeFile(DATABASE_PATH, JSON.stringify(data, null, 2), err => {
             isWriting = false;
-            if (err) {
-                return reject(err);
-            }
+            if (err) return reject(err);
             resolve();
         });
     });
 };
 
+// Calcolo Overall Rank
+function calculateOverall(ranks) {
+    const validRanks = Object.values(ranks).filter(r => RANK_POINTS[r]);
+    if (validRanks.length === 0) return 'N/A';
+    
+    const total = validRanks.reduce((sum, r) => sum + RANK_POINTS[r], 0);
+    const avg = total / validRanks.length;
 
-// Endpoint per ottenere i dati del database con il calcolo Overall
+    if (avg >= 95) return 'S';
+    if (avg >= 85) return 'A+';
+    if (avg >= 75) return 'A-';
+    if (avg >= 65) return 'B+';
+    if (avg >= 55) return 'B-';
+    if (avg >= 45) return 'C+';
+    if (avg >= 35) return 'C-';
+    if (avg >= 25) return 'D+';
+    if (avg >= 15) return 'D-';
+    return 'F';
+}
+
+// === ROTTE ===
+
 app.get('/api/database', async (req, res) => {
     try {
         const db = await readDatabase();
-        
-        // Calcola il rank Overall per ogni giocatore e aggiungilo ai ranks
-        db.players.forEach(player => {
-            const overallRank = calculateOverallRank(player.ranks);
-            // Non modifica il file database, lo aggiunge solo all'oggetto da inviare
-            player.ranks['Overall'] = overallRank; 
-            player.overallRank = overallRank; // campo aggiuntivo per facilitare il frontend
+        // Calcola overall al volo
+        db.players.forEach(p => {
+            p.overallRank = calculateOverall(p.ranks);
+            p.ranks['Overall'] = p.overallRank;
         });
-
         res.json(db);
     } catch (error) {
-        console.error("Errore nel recupero del database:", error);
-        res.status(500).send('Error retrieving or parsing database.');
+        console.error(error);
+        res.status(500).json({ error: 'Errore server lettura DB' });
     }
 });
 
-// Middleware di autenticazione per le rotte amministrative
-const authenticateAdmin = (req, res, next) => {
-    const apiKey = req.headers['x-api-key'];
-    if (!ADMIN_KEY) {
-        console.error("ADMIN_KEY non impostata. Controlla le variabili d'ambiente.");
-        return res.status(500).send('Server configuration error.');
-    }
-    if (apiKey !== ADMIN_KEY) {
-        return res.status(403).send('Unauthorized');
+// Middleware auth semplice
+const requireAuth = (req, res, next) => {
+    if (req.headers['x-api-key'] !== ADMIN_KEY) {
+        return res.status(403).json({ error: 'Chiave non valida' });
     }
     next();
 };
 
-// Endpoint per aggiungere un nuovo giocatore o aggiornare il rank di uno esistente
-app.post('/api/add-player', authenticateAdmin, async (req, res) => {
+app.post('/api/add-player', requireAuth, async (req, res) => {
     const { name, mode, tier, region } = req.body;
-
-    if (!name || !mode || !tier || !region) {
-        return res.status(400).send('Missing player details (name, mode, tier, region).');
-    }
+    if (!name || !mode || !tier || !region) return res.status(400).json({ error: 'Dati mancanti' });
 
     try {
         const db = await readDatabase();
-        const playerToUpdate = db.players.find(p => p.name.toLowerCase() === name.toLowerCase());
+        let player = db.players.find(p => p.name.toLowerCase() === name.toLowerCase());
 
-        if (playerToUpdate) {
-            if (!playerToUpdate.ranks) {
-                playerToUpdate.ranks = {};
-            }
-            // Aggiorna il rank specifico per la modalità
-            playerToUpdate.ranks[mode] = tier;
+        if (!player) {
+            player = { name, region, ranks: {} };
+            db.players.push(player);
         } else {
-            // Nuovo giocatore
-            const newPlayer = {
-                name,
-                region,
-                ranks: { [mode]: tier }
-            };
-            db.players.push(newPlayer);
+            // Aggiorna regione se cambiata
+            player.region = region;
         }
 
+        player.ranks[mode] = tier;
         await writeDatabase(db);
-        res.status(200).send('Player data updated successfully.');
-
-    } catch (error) {
-        console.error("Error during player update:", error);
-        res.status(500).send(error.message || 'Error processing request.');
+        res.json({ success: true, message: 'Giocatore aggiornato' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
     }
 });
 
-// Endpoint per rimuovere un giocatore
-app.post('/api/remove-player', authenticateAdmin, async (req, res) => {
+app.post('/api/remove-player', requireAuth, async (req, res) => {
     const { name } = req.body;
-
-    if (!name) {
-        return res.status(400).send('Missing player name.');
-    }
-
     try {
         const db = await readDatabase();
-        const initialLength = db.players.length;
-        
+        const initialLen = db.players.length;
         db.players = db.players.filter(p => p.name.toLowerCase() !== name.toLowerCase());
-
-        if (db.players.length === initialLength) {
-            return res.status(404).send('Player not found.');
-        }
-
+        
+        if (db.players.length === initialLen) return res.status(404).json({ error: 'Giocatore non trovato' });
+        
         await writeDatabase(db);
-        res.status(200).send('Player removed successfully.');
-
-    } catch (error) {
-        console.error("Error during player removal:", error);
-        res.status(500).send(error.message || 'Error processing request.');
+        res.json({ success: true, message: 'Giocatore rimosso' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server attivo su porta ${PORT}`));
