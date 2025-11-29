@@ -26,6 +26,7 @@
             <h1 class="tierlist-logo">TIERLIST ITALIANA</h1>
             <div class="header-right-icons">
                 <div class="search-bar-container">
+                    <i class="fas fa-search search-icon"></i>
                     <input type="text" id="playerSearch" placeholder="Cerca un giocatore...">
                     <div id="playerSuggestions" class="suggestions-container"></div>
                 </div>
@@ -37,19 +38,29 @@
     <main>
         <div class="modes-bar">
             <div class="modes-list">
-            </div>
+                </div>
         </div>
         
         <div id="tierlist">
-        </div>
+            </div>
         
         <div id="adminPanelContainer" style="display: none;">
-        </div>
+            </div>
     </main>
 
-    <div id="adminLoginModal" class="modal-container" style="display: none;">
+    <div id="adminLoginModal" class="modal">
+        <div class="modal-content">
+            <h2>Accesso Amministratore</h2>
+            <form id="adminLoginForm">
+                <input type="password" id="adminKeyInput" placeholder="Inserisci la chiave di amministrazione" required>
+                <button type="submit">Accedi</button>
+            </form>
+        </div>
     </div>
+    
+    <div id="playerDetailModal" class="modal player-detail-modal" style="display: none;">
+        </div>
 
-    <script src="script.obfuscated.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
