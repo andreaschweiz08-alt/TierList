@@ -3,65 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Italian Tier List</title>
+    <title>TierList Italiana</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-
     <header>
-        <div class="logo">
-            <h1>🇮🇹 ITIERLIST</h1>
-        </div>
-        <div class="search-box">
-            <input type="text" id="playerSearch" placeholder="Cerca giocatore...">
-            <div id="playerSuggestions" class="suggestions"></div>
-        </div>
-        <div class="actions">
-            <i class="fas fa-cog admin-icon" id="adminIcon"></i>
+        <div class="header-content">
+            <div class="header-left-icons">
+                <a 
+                    href="https://discord.gg/9djGFHYw7h" 
+                    class="discord-button" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                >
+                    <i class="fab fa-discord"></i><span>Discord</span>
+                </a>
+            </div>
+            <h1 class="tierlist-logo">TIERLIST ITALIANA</h1>
+            <div class="header-right-icons">
+                <div class="search-bar-container">
+                    <input type="text" id="playerSearch" placeholder="Cerca un giocatore...">
+                    <div id="playerSuggestions" class="suggestions-container"></div>
+                </div>
+                <i class="fas fa-user-shield admin-icon" id="adminIcon"></i>
+            </div>
         </div>
     </header>
 
-    <div class="modes-bar">
-        <div class="modes-list">
+    <main>
+        <div class="modes-bar">
+            <div class="modes-list">
             </div>
+        </div>
+        
+        <div id="tierlist">
+        </div>
+        
+        <div id="adminPanelContainer" style="display: none;">
+        </div>
+    </main>
+
+    <div id="adminLoginModal" class="modal-container" style="display: none;">
     </div>
 
-    <div id="adminPanelContainer">
-        <h3>⚡ Pannello Amministrazione</h3>
-        <div class="admin-row">
-            <input type="text" id="admName" placeholder="Nome Giocatore">
-            <input type="text" id="admRegion" placeholder="Regione (es. EU)">
-        </div>
-        <div class="admin-row">
-            <select id="admMode"></select>
-            <select id="admTier"></select>
-            <button class="btn-save" id="btnSavePlayer">Salva/Aggiorna</button>
-        </div>
-        <button class="btn-delete" id="btnDeletePlayer">Rimuovi un Giocatore (via Nome)</button>
-    </div>
-
-    <main id="tierlist">
-        </main>
-
-    <div id="adminLoginModal" class="modal">
-        <div class="modal-content">
-            <form id="adminLoginForm" class="modal-body">
-                <h3>Login Admin</h3>
-                <input type="password" id="adminKeyInput" placeholder="Inserisci Key">
-                <button type="submit">Entra</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="playerDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-body">
-                </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+    <script src="script.obfuscated.js"></script>
 </body>
 </html>
